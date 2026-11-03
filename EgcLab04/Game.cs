@@ -102,29 +102,47 @@ public class Game : GameWindow
         float dt = (float)args.Time;
         SceneObject sel = _scene[_selected];
 
-        const float moveSpeed = 2.0f;   // unități de lume pe secundă
-        if (KeyboardState.IsKeyDown(Keys.Left))  sel.Transform.Position.X -= moveSpeed * dt;
-        if (KeyboardState.IsKeyDown(Keys.Right)) sel.Transform.Position.X += moveSpeed * dt;
-        if (KeyboardState.IsKeyDown(Keys.Down))  sel.Transform.Position.Y -= moveSpeed * dt;
-        if (KeyboardState.IsKeyDown(Keys.Up))    sel.Transform.Position.Y += moveSpeed * dt;
+        float speedMultiplier =
+            KeyboardState.IsKeyDown(Keys.LeftShift) ? 3.0f : 1.0f;
 
-        // TODO (T2): Q / E rotesc obiectul, Z / X îl scalează
+        const float moveSpeed = 2.0f;
+        float moveStep = moveSpeed * speedMultiplier * dt;
 
-        if (KeyboardState.IsKeyPressed(Keys.Tab)) _selected = (_selected + 1) % _scene.Count;
-        if (KeyboardState.IsKeyPressed(Keys.O))   _camera.IsPerspective = !_camera.IsPerspective;
-        if (KeyboardState.IsKeyPressed(Keys.F))   _wireframe = !_wireframe;
-        if (KeyboardState.IsKeyPressed(Keys.R))   ResetScene();
+        if (KeyboardState.IsKeyDown(Keys.Left)) sel.Transform.Position.X -= moveStep;
+        if (KeyboardState.IsKeyDown(Keys.Right)) sel.Transform.Position.X += moveStep;
+        if (KeyboardState.IsKeyDown(Keys.Down)) sel.Transform.Position.Y -= moveStep;
+        if (KeyboardState.IsKeyDown(Keys.Up)) sel.Transform.Position.Y += moveStep;
 
-        if (KeyboardState.IsKeyPressed(Keys.Tab) || KeyboardState.IsKeyPressed(Keys.O) ||
-            KeyboardState.IsKeyPressed(Keys.R))
-        {
-            _titleDirty = true;
-        }
+        // T2: Q rotește trigonometric, E în sens orar.
+        const float rotationSpeed = 90.0f;
+        float rotationStep = rotationSpeed * speedMultiplier * dt;
+
+        if (KeyboardState.IsKeyDown(Keys.Q)) sel.Transform.Rotation += rotationStep;
+        if (KeyboardState.IsKeyDown(Keys.E)) sel.Transform.Rotation -= rotationStep;
+
+        // T2: Z micșorează, X mărește.
+        float scaleFactor = MathF.Pow(1.5f, speedMultiplier * dt);
+
+        if (KeyboardState.IsKeyDown(Keys.Z))
+            sel.Transform.Scale /= scaleFactor;
+
+        if (KeyboardState.IsKeyDown(Keys.X))
+            sel.Transform.Scale *= scaleFactor;
+
+        sel.Transform.Scale.X = Math.Clamp(sel.Transform.Scale.X, 0.1f, 10.0f);
+        sel.Transform.Scale.Y = Math.Clamp(sel.Transform.Scale.Y, 0.1f, 10.0f);
+
+        // T2: Înmulțirea schimbă scara proporțional; adunarea ar modifica-o cu o valoare fixă.
+
 
         // --- Obiectul selectat: mouse-ul (secțiunea 9) -------------------------------
 
         // TODO (T3): la clic stânga, obiectul selectat se mută în punctul din lume aflat sub cursor
         //            (folosiți ScreenToWorld; Depth nu se schimbă)
+        if (MouseState.IsButtonPressed(MouseButton.Left))
+        {
+            sel.Transform.Position = ScreenToWorld(MouseState.Position);
+        }
 
         // TODO (T4, facultativ): clic dreapta = pivot; tasta P ținută = rotație în jurul pivotului
 
